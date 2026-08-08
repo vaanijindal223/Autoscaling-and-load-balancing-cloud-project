@@ -1,0 +1,20 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    environment:
+      - DEPLOYMENT_TARGET=local-docker-compose
+      - APP_VERSION=1.0.0
+      - PORT=5000
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8501:8501"
+    environment:
+      # note: "backend" resolves via Docker Compose's built-in DNS,
+      # not localhost, since these are separate containers
+      - BACKEND_URL=http://backend:5000
+    depends_on:
+      - backend
