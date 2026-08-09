@@ -1,8 +1,8 @@
 ############################################
 # EC2 instance role
 # Scoped to: SSM (for remote access instead of
-# SSH), CloudWatch logs/metrics, and read/write
-# to ONE specific S3 bucket (not full account access)
+# SSH), CloudWatch logs/metrics, ECR pull, and
+# read/write to ONE specific S3 bucket
 ############################################
 data "aws_iam_policy_document" "ec2_assume" {
   statement {
@@ -27,6 +27,12 @@ resource "aws_iam_role_policy_attachment" "ec2_ssm" {
 resource "aws_iam_role_policy_attachment" "ec2_cloudwatch" {
   role       = aws_iam_role.ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+# Lets EC2 instances authenticate to ECR and pull images
+resource "aws_iam_role_policy_attachment" "ec2_ecr_readonly" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
 # Scoped S3 access instead of AmazonS3FullAccess
@@ -57,8 +63,6 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 
 ############################################
 # Lambda execution role (for the cleanup function)
-# Scoped to exactly the EC2 actions it needs,
-# not EC2FullAccess
 ############################################
 data "aws_iam_policy_document" "lambda_assume" {
   statement {
@@ -87,8 +91,7 @@ data "aws_iam_policy_document" "lambda_ec2_scoped" {
       "ec2:StopInstances",
       "ec2:TerminateInstances",
     ]
-    resources = ["*"] # EC2 describe/stop/terminate don't support resource-level scoping cleanly;
-    # tighten further with a Condition on tags in production, e.g. aws:ResourceTag/Project
+    resources = ["*"]
   }
 }
 
@@ -99,8 +102,7 @@ resource "aws_iam_role_policy" "lambda_ec2_scoped" {
 }
 
 ############################################
-# ECS Task Execution role (lets Fargate pull
-# images from ECR and write logs)
+# ECS Task Execution role
 ############################################
 data "aws_iam_policy_document" "ecs_task_assume" {
   statement {
@@ -122,8 +124,6 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-# Separate task role for the app itself (permissions your
-# app code needs at runtime, e.g. reading from the same S3 bucket)
 resource "aws_iam_role" "ecs_task_role" {
   name               = "${var.project_name}-ecs-task-role"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_assume.json
