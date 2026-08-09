@@ -60,7 +60,9 @@ resource "aws_security_group" "app" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["YOUR_IP/32"] # <-- replace with your actual public IP before applying
+    # IMPORTANT: this must include the /32 suffix - a CIDR block, not a bare IP.
+    # Example: "103.212.138.246/32"  (NOT just "103.212.138.246")
+    cidr_blocks = ["103.212.138.246/32"] # <-- replace YOUR_IP with your actual public IP, keep the /32
   }
 
   egress {
