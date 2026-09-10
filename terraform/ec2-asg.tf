@@ -62,7 +62,9 @@ locals {
 resource "aws_launch_template" "backend" {
   name_prefix   = "${var.project_name}-backend-lt-"
   image_id      = data.aws_ami.amazon_linux.id
-  instance_type = "t3.micro"   "InstanceTypes[].InstanceType"
+  instance_type = "t3.micro" # free-tier eligible on accounts created after ~2022
+  # if this still errors, run:
+  # aws ec2 describe-instance-types --filters "Name=free-tier-eligible,Values=true" --query "InstanceTypes[].InstanceType"
   # and use whatever it returns instead
 
   iam_instance_profile {
@@ -87,11 +89,11 @@ resource "aws_launch_template" "backend" {
 
 ############################################
 # Auto Scaling Group
-# NOTE: health_check_type is "EC2" for now (just
-# checks the instance is running). In Phase 6, once
-# the ALB + target group exist, we switch this to
-# "ELB" so unhealthy app containers get replaced too,
-# not just crashed instances.
+# health_check_type = "ELB" now that the ALB
+# target group exists (see alb.tf) - this makes
+# the ASG replace instances whose app container
+# is failing health checks, not just instances
+# that have crashed entirely.
 ############################################
 resource "aws_autoscaling_group" "backend" {
   name                = "${var.project_name}-backend-asg"
@@ -101,8 +103,8 @@ resource "aws_autoscaling_group" "backend" {
   max_size         = 4
   desired_capacity = 2
 
-  health_check_type        = "EC2"
-  health_check_grace_period = 60
+  health_check_type         = "ELB"
+  health_check_grace_period = 120
 
   launch_template {
     id      = aws_launch_template.backend.id

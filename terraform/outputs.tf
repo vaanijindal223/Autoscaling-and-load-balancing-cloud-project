@@ -53,3 +53,23 @@ output "backend_asg_name" {
 output "backend_launch_template_id" {
   value = aws_launch_template.backend.id
 }
+
+output "alb_dns_name" {
+  value = aws_lb.main.dns_name
+}
+
+output "backend_via_ec2_url" {
+  value = "http://${aws_lb.main.dns_name}/health"
+}
+
+output "backend_via_ecs_url" {
+  value = "http://${aws_lb.main.dns_name}:8080/health"
+}
+
+output "ecs_cluster_name" {
+  value = aws_ecs_cluster.main.name
+}
+
+output "ecs_service_name" {
+  value = aws_ecs_service.backend.name
+}
