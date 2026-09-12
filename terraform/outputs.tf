@@ -66,6 +66,10 @@ output "backend_via_ecs_url" {
   value = "http://${aws_lb.main.dns_name}:8080/health"
 }
 
+output "frontend_dashboard_url" {
+  value = "http://${aws_lb.main.dns_name}:8501"
+}
+
 output "ecs_cluster_name" {
   value = aws_ecs_cluster.main.name
 }

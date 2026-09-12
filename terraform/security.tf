@@ -23,6 +23,14 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    description = "HTTP to Streamlit frontend"
+    from_port   = 8501
+    to_port     = 8501
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -53,6 +61,14 @@ resource "aws_security_group" "app" {
     description     = "App port from ALB only"
     from_port       = var.app_port
     to_port         = var.app_port
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+
+  ingress {
+    description     = "Frontend port from ALB only"
+    from_port       = 8501
+    to_port         = 8501
     protocol        = "tcp"
     security_groups = [aws_security_group.alb.id]
   }
